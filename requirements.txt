@@ -1,0 +1,15 @@
+# Core training stack (install torch matching the A5000 CUDA driver first)
+litgpt>=0.4.0
+torch>=2.3.0
+numpy<2.0
+# Data
+datasets>=2.19.0
+huggingface_hub>=0.23.0
+transformers>=4.41.0
+tokenizers>=0.19.0
+sentencepiece>=0.2.0
+# Logging / monitoring
+tensorboard>=2.16.0
+tqdm>=4.66.0
+# Evaluation (installed in eval step; harness pulls its own deps)
+# lm-eval>=0.4.2

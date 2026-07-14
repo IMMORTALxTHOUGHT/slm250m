@@ -1,0 +1,8 @@
+__pycache__/
+.venv/
+.hf/
+data/
+out/
+hf_model/
+*.bin
+*.pt
