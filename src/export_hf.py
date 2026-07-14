@@ -42,12 +42,18 @@ def convert(raw_sd, cfg):
     sd = hf.state_dict()
 
     def set(name, tensor):
+        # lm_head may be absent from a tied HF state_dict; skip (tie handles it).
+        if name not in sd:
+            return
         assert sd[name].shape == tensor.shape, f"{name}: {sd[name].shape} vs {tensor.shape}"
         sd[name] = tensor
 
+    # LitGPT renamed the fused qkv linear (attn.attn -> attn.qkv) around 0.4.
+    qkv_key = "attn.qkv.weight" if "transformer.h.0.attn.qkv.weight" in raw_sd else "attn.attn.weight"
+
     set("model.embed_tokens.weight", raw_sd["transformer.wte.weight"])
     set("model.norm.weight", raw_sd["transformer.ln_f.weight"])
-    set("lm_head.weight", raw_sd["lm_head.weight"])
+    set("lm_head.weight", raw_sd["transformer.wte.weight"])  # tied
 
     for i in range(cfg.n_layer):
         p = f"transformer.h.{i}"
@@ -56,7 +62,7 @@ def convert(raw_sd, cfg):
         set(f"{h}.post_attention_layernorm.weight", raw_sd[f"{p}.norm_2.weight"])
 
         # qkv un-interleave: litgpt rows grouped [q_per_kv q, 1 k, 1 v] per group
-        W = raw_sd[f"{p}.attn.attn.weight"]           # ((n_head+2*n_kv)*hs, n_embd)
+        W = raw_sd[f"{p}.{qkv_key}"]                   # ((n_head+2*n_kv)*hs, n_embd)
         W = W.view(n_kv, q_per_kv + 2, hs, cfg.n_embd)
         q = W[:, :q_per_kv].reshape(n_head * hs, cfg.n_embd)
         k = W[:, q_per_kv:q_per_kv + 1].reshape(n_kv * hs, cfg.n_embd)
@@ -71,7 +77,8 @@ def convert(raw_sd, cfg):
         set(f"{h}.mlp.up_proj.weight", raw_sd[f"{p}.mlp.fc_2.weight"])
         set(f"{h}.mlp.down_proj.weight", raw_sd[f"{p}.mlp.proj.weight"])
 
-    hf.load_state_dict(sd)
+    hf.load_state_dict(sd, strict=False)
+    hf.tie_weights()
     return hf
 
 
