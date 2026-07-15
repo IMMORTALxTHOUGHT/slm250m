@@ -22,13 +22,19 @@ python -m pip install -U pip wheel setuptools
 # --- 2. PyTorch (CUDA) -------------------------------------------------------
 # A5000 = Ampere (sm_86). The runtime CUDA MUST be <= the driver's CUDA.
 # Check the driver version with `nvidia-smi` (top-right "CUDA Version").
-#   driver 12.4 -> use cu124 (or cu121); driver 12.1 -> cu121; driver 11.8 -> cu118
-# We pin an explicit torch build so pip never silently grabs a too-new wheel.
+#   driver 12.4 -> cu124 (or cu121); driver 12.1 -> cu121; driver 11.8 -> cu118
+# We pin an explicit torch build so pip never silently grabs a too-new wheel,
+# and we PURGE any leftover nvidia-* wheels to avoid libcusparse/nvJitLink
+# symbol clashes when downgrading/upgrading torch.
+# litgpt 0.5.x requires torch>=2.7, so the minimum usable version is 2.7.x.
 TORCH_CUDA="${TORCH_CUDA:-cu124}"      # override with:  TORCH_CUDA=cu121 bash scripts/00_setup.sh
-TORCH_VER="${TORCH_VER:-2.5.1}"
-if ! python -c "import torch; print('torch', torch.__version__, 'cuda', torch.cuda.is_available()); import sys; sys.exit(0 if torch.cuda.is_available() else 1)" 2>/dev/null; then
-  echo "[setup] (re)installing torch ${TORCH_VER}+${TORCH_CUDA} (driver-compatible)..."
-  pip install "torch==${TORCH_VER}+${TORCH_CUDA}" --index-url "https://download.pytorch.org/whl/${TORCH_CUDA}"
+TORCH_VER="${TORCH_VER:-2.7.1}"
+DESIRED="torch==${TORCH_VER}+${TORCH_CUDA}"
+if ! python -c "import torch,sys; assert torch.__version__.startswith('${TORCH_VER}+${TORCH_CUDA}'), torch.__version__; assert torch.cuda.is_available(); sys.exit(0)" 2>/dev/null; then
+  echo "[setup] clean (re)install of ${DESIRED} (driver-compatible)..."
+  pip uninstall -y torch 2>/dev/null || true
+  pip uninstall -y $(pip list 2>/dev/null | grep -iE '^nvidia-' | awk '{print $1}') 2>/dev/null || true
+  pip install "${DESIRED}" --index-url "https://download.pytorch.org/whl/${TORCH_CUDA}"
 fi
 
 # --- 3. Project deps ---------------------------------------------------------
