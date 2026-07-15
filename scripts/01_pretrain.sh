@@ -8,8 +8,8 @@ source .venv/bin/activate
 RUN="${RUN:-run1}"
 MAX_STEPS="${MAX_STEPS:?set MAX_STEPS (see src.compute_budget)}"
 WARMUP="${WARMUP:-150}"
-MICRO="${MICRO:-16}"
-ACCUM="${ACCUM:-32}"
+MICRO="${MICRO:-4}"      # 16 OOM'd on A5000 24GB (N^2 attention); 4 fits (~10GB peak)
+ACCUM="${ACCUM:-128}"    # keeps 524k tok/step (4*128*1024) -> identical training dynamics
 
 mkdir -p "out/$RUN"
 LOG="out/$RUN/train_$(date +%Y%m%d_%H%M%S).log"
