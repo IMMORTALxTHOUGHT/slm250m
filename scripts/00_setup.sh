@@ -22,12 +22,15 @@ python -m pip install -U pip wheel setuptools
 # --- 2. PyTorch (CUDA) -------------------------------------------------------
 # A5000 = Ampere (sm_86). The runtime CUDA MUST be <= the driver's CUDA.
 # Check the driver version with `nvidia-smi` (top-right "CUDA Version").
-#   driver 12.4 -> cu124 (or cu121); driver 12.1 -> cu121; driver 11.8 -> cu118
+#   driver 12.4 -> cu121 (torch>=2.7 only ships cu121, not cu124); driver 12.1
+#   -> cu121; driver 11.8 -> cu118.
+# CUDA runtimes are BACKWARD compatible: a cu121 build (runtime 12.1) runs fine
+# on a 12.4 driver, so we use cu121 for torch>=2.7 (litgpt 0.5.x needs torch>=2.7).
 # We pin an explicit torch build so pip never silently grabs a too-new wheel,
 # and we PURGE any leftover nvidia-* wheels to avoid libcusparse/nvJitLink
-# symbol clashes when downgrading/upgrading torch.
+# symbol clashes when changing torch versions.
 # litgpt 0.5.x requires torch>=2.7, so the minimum usable version is 2.7.x.
-TORCH_CUDA="${TORCH_CUDA:-cu124}"      # override with:  TORCH_CUDA=cu121 bash scripts/00_setup.sh
+TORCH_CUDA="${TORCH_CUDA:-cu121}"      # override with:  TORCH_CUDA=cu118 bash scripts/00_setup.sh
 TORCH_VER="${TORCH_VER:-2.7.1}"
 DESIRED="torch==${TORCH_VER}+${TORCH_CUDA}"
 if ! python -c "import torch,sys; assert torch.__version__.startswith('${TORCH_VER}+${TORCH_CUDA}'), torch.__version__; assert torch.cuda.is_available(); sys.exit(0)" 2>/dev/null; then
