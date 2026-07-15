@@ -1,5 +1,8 @@
 # Core training stack (install torch matching the A5000 CUDA driver first)
-litgpt>=0.4.0
+# NOTE: litgpt 0.5.x requires torch>=2.7, but torch>=2.7 is only built for
+# cu128+ which a CUDA 12.4 driver cannot run. So we pin litgpt to 0.4.x and
+# pair it with torch 2.6.0+cu124 (the highest cu124 build). See scripts/00_setup.sh.
+litgpt>=0.4.0,<0.5
 torch>=2.3.0
 numpy<2.0
 # Data

@@ -20,18 +20,15 @@ source .venv/bin/activate
 python -m pip install -U pip wheel setuptools
 
 # --- 2. PyTorch (CUDA) -------------------------------------------------------
-# A5000 = Ampere (sm_86). The runtime CUDA MUST be <= the driver's CUDA.
-# Check the driver version with `nvidia-smi` (top-right "CUDA Version").
-#   driver 12.4 -> cu121 (torch>=2.7 only ships cu121, not cu124); driver 12.1
-#   -> cu121; driver 11.8 -> cu118.
-# CUDA runtimes are BACKWARD compatible: a cu121 build (runtime 12.1) runs fine
-# on a 12.4 driver, so we use cu121 for torch>=2.7 (litgpt 0.5.x needs torch>=2.7).
-# We pin an explicit torch build so pip never silently grabs a too-new wheel,
-# and we PURGE any leftover nvidia-* wheels to avoid libcusparse/nvJitLink
-# symbol clashes when changing torch versions.
-# litgpt 0.5.x requires torch>=2.7, so the minimum usable version is 2.7.x.
-TORCH_CUDA="${TORCH_CUDA:-cu121}"      # override with:  TORCH_CUDA=cu118 bash scripts/00_setup.sh
-TORCH_VER="${TORCH_VER:-2.7.1}"
+# A5000 = Ampere (sm_86). Runtime CUDA MUST be <= driver CUDA (nvidia-smi, top-right).
+# This driver is 12.4. The cu124 wheel index tops out at torch 2.6.0, and torch>=2.7
+# (required by litgpt 0.5.x) is only built for cu128+ which this driver CANNOT run.
+# So we use the highest runnable torch: 2.6.0+cu124 (exact 12.4 match), paired with
+# litgpt 0.4.x (requirements.txt pins litgpt<0.5). CUDA is backward-compatible.
+# We pin an explicit torch build so pip never silently grabs a too-new wheel, and we
+# PURGE any leftover nvidia-* wheels to avoid libcusparse/nvJitLink symbol clashes.
+TORCH_CUDA="${TORCH_CUDA:-cu124}"
+TORCH_VER="${TORCH_VER:-2.6.0}"
 DESIRED="torch==${TORCH_VER}+${TORCH_CUDA}"
 if ! python -c "import torch,sys; assert torch.__version__.startswith('${TORCH_VER}+${TORCH_CUDA}'), torch.__version__; assert torch.cuda.is_available(); sys.exit(0)" 2>/dev/null; then
   echo "[setup] clean (re)install of ${DESIRED} (driver-compatible)..."

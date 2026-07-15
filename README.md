@@ -92,7 +92,10 @@ bash scripts/03_eval.sh hf_model   # HellaSwag, ARC-e/c, PIQA, OpenBookQA
 - **Tokenizer:** default `NousResearch/Llama-2-7b-hf` (ungated, 32k). Keep the
   SAME tokenizer for prepare_data, sft, generate, and export.
 - **Disk:** ~5 GB for bins + ~2 GB/checkpoint. Verify `df -h` before the long run.
-- **CUDA wheel:** `00_setup.sh` installs cu121 torch; change if the driver needs cu118.
+- **CUDA wheel:** `00_setup.sh` installs `torch 2.6.0+cu124` (the highest build the
+  CUDA 12.4 driver can run). `litgpt` is pinned to `0.4.x` because `0.5.x` needs
+  `torch>=2.7` (=cu128+, which this driver cannot run). If your driver differs,
+  override with `TORCH_CUDA=cu121 TORCH_VER=2.5.1 bash scripts/00_setup.sh`.
 - **flash-attn:** not required — the loop uses PyTorch SDPA (flash kernel). Install
   the standalone package only if you want it (see setup script).
 - **Undertraining is expected** at 2.5B tokens; if smoke-test throughput is higher
