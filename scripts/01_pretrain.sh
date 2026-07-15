@@ -14,12 +14,12 @@ ACCUM="${ACCUM:-128}"    # keeps 524k tok/step (4*128*1024) -> identical trainin
 mkdir -p "out/$RUN"
 LOG="out/$RUN/train_$(date +%Y%m%d_%H%M%S).log"
 
-CMD="python -m src.train --data_dir data --out_dir out/$RUN \
+CMD="python -u -m src.train --data_dir data --out_dir out/$RUN \
   --micro_batch_size $MICRO --grad_accum $ACCUM \
   --max_steps $MAX_STEPS --warmup_steps $WARMUP"
 
 echo "[launch] $CMD"
 echo "[launch] logging to $LOG"
-tmux new-session -d -s "slm_$RUN" "stdbuf -oL $CMD 2>&1 | tee $LOG"
+tmux new-session -d -s "slm_$RUN" "$CMD 2>&1 | tee $LOG"
 echo "[launch] attached session: tmux attach -t slm_$RUN"
 echo "[launch] tensorboard:       tensorboard --logdir out/$RUN/tb --port 6006"
