@@ -110,7 +110,7 @@ def estimate_loss(model, get_val, iters, device):
         x, y = get_val()
         with torch.autocast("cuda", dtype=torch.bfloat16):
             logits = model(x)
-            loss = F.cross_entropy(logits.view(-1, logits.size(-1)), y.view(-1))
+        loss = F.cross_entropy(logits.float().view(-1, logits.size(-1)), y.view(-1))
         losses[k] = loss.item()
     model.train()
     return losses.mean().item()
@@ -210,8 +210,8 @@ def main():
             x, y = get_train()
             with torch.autocast("cuda", dtype=torch.bfloat16):
                 logits = model(x)
-                loss = F.cross_entropy(logits.view(-1, logits.size(-1)), y.view(-1))
-                loss = loss / args.grad_accum
+            loss = F.cross_entropy(logits.float().view(-1, logits.size(-1)), y.view(-1))
+            loss = loss / args.grad_accum
             loss.backward()
             loss_acc += loss.item()
         if args.grad_clip > 0:

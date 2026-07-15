@@ -10,8 +10,11 @@ Run `python -m src.model` to print the exact parameter count.
 """
 from __future__ import annotations
 
-from litgpt import Config, GPT
+import math
+
 import torch
+import torch.nn as nn
+from litgpt import Config, GPT
 
 
 def build_config(vocab_size: int = 32000, block_size: int = 1024) -> Config:
@@ -41,6 +44,28 @@ def build_config(vocab_size: int = 32000, block_size: int = 1024) -> Config:
 def build_model(config: Config, tie_embeddings: bool = True) -> GPT:
     model = GPT(config)
     model.max_seq_length = config.block_size
+
+    # Stable from-scratch init. litgpt's default fresh init leaves the residual
+    # output projections at std=0.02. For Llama-style blocks (parallel_residual
+    # = False) litgpt does NOT apply the GPT-NeoX 1/sqrt(2*n_layer) scaling, so
+    # the wide SwiGLU down-projection (fan-in 2816) amplifies the residual stream
+    # ~1.5x per layer and it explodes (logits -> ~1000, loss -> ~880). Scale only
+    # the output projections, matching the GPT-NeoX convention. Embeddings/norms
+    # keep litgpt's defaults.
+    out_std = 0.02 / math.sqrt(2 * config.n_layer)
+    with torch.no_grad():
+        for name, p in model.named_parameters():
+            if name.endswith(".proj.weight"):            # attn.proj, mlp.proj (output)
+                nn.init.normal_(p, mean=0.0, std=out_std)
+            elif "wte" in name and name.endswith(".weight"):  # shared embedding
+                nn.init.normal_(p, mean=0.0, std=0.02)
+            elif name.endswith(".bias"):
+                nn.init.zeros_(p)
+            elif name.endswith(".weight") and ("norm" in name or "ln" in name):
+                pass  # RMSNorm weight: keep litgpt default (=1)
+            elif name.endswith(".weight"):               # input projections (qkv, fc_1/2)
+                nn.init.normal_(p, mean=0.0, std=0.02)
+
     if tie_embeddings:
         # Share input embedding and output projection weights.
         model.lm_head.weight = model.transformer.wte.weight
