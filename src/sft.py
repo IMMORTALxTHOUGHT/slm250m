@@ -12,6 +12,7 @@ Produces out/sft/final.pt (same checkpoint format as pretraining).
 from __future__ import annotations
 
 import argparse
+import json
 import math
 import os
 import random
@@ -53,6 +54,9 @@ def get_args():
     ap.add_argument("--out_dir", default="out/sft")
     ap.add_argument("--dataset", default="HuggingFaceTB/smoltalk")
     ap.add_argument("--dataset_config", default="all")
+    ap.add_argument("--data_file", default=None,
+                    help="LOCAL instruct file (offline). JSONL (one {'messages':[...]} per "
+                         "line) or a JSON array. Also accepts {'conversations':[{'from','value'}]}.")
     ap.add_argument("--tokenizer", default="NousResearch/Llama-2-7b-hf")
     ap.add_argument("--max_samples", type=int, default=50000)
     ap.add_argument("--epochs", type=int, default=1)
@@ -82,18 +86,41 @@ def main():
     eos_id = tok.eos_token_id or 2
 
     # --- data ---
-    print(f"[sft] loading {args.dataset}:{args.dataset_config}")
-    ds = load_dataset(args.dataset, args.dataset_config, split="train")
-    if args.max_samples and len(ds) > args.max_samples:
-        ds = ds.shuffle(seed=args.seed).select(range(args.max_samples))
     examples = []
-    for row in ds:
-        msgs = row.get("messages")
-        if not msgs:
-            continue
-        ii, ll = render_and_mask(msgs, tok, eos_id, args.block_size)
-        if any(l != IGNORE for l in ll):
-            examples.append((ii, ll))
+    if args.data_file:
+        print(f"[sft] loading local data file: {args.data_file}")
+        with open(args.data_file, "r", encoding="utf-8") as f:
+            text = f.read().strip()
+        try:
+            rows = json.loads(text)            # whole-file JSON array / object
+            if isinstance(rows, dict):
+                rows = [rows]
+        except json.JSONDecodeError:
+            rows = [json.loads(l) for l in text.splitlines() if l.strip()]  # JSONL
+        for row in rows:
+            msgs = row.get("messages") or row.get("conversations")
+            if not msgs:
+                continue
+            if isinstance(msgs, list) and msgs and "from" in msgs[0]:
+                msgs = [{"role": ("assistant" if m.get("from") in ("assistant", "gpt")
+                                  else "user"),
+                         "content": m.get("value") or m.get("content") or ""}
+                        for m in msgs]
+            ii, ll = render_and_mask(msgs, tok, eos_id, args.block_size)
+            if any(l != IGNORE for l in ll):
+                examples.append((ii, ll))
+    else:
+        print(f"[sft] loading {args.dataset}:{args.dataset_config}")
+        ds = load_dataset(args.dataset, args.dataset_config, split="train")
+        if args.max_samples and len(ds) > args.max_samples:
+            ds = ds.shuffle(seed=args.seed).select(range(args.max_samples))
+        for row in ds:
+            msgs = row.get("messages")
+            if not msgs:
+                continue
+            ii, ll = render_and_mask(msgs, tok, eos_id, args.block_size)
+            if any(l != IGNORE for l in ll):
+                examples.append((ii, ll))
     print(f"[sft] {len(examples)} usable examples")
 
     def collate(batch):
