@@ -105,6 +105,97 @@ def build(cur=CORE):
     rewritten = [(f"Rewrite this to be clearer: '{p}'", r) for p, r in CORE[:5]]
     pairs += rewritten
 
+    # classification
+    classif = [
+        ("Is this review positive or negative: 'The movie was boring and too long.'", "That review is negative."),
+        ("Is this review positive or negative: 'I loved the food, it was amazing!'", "That review is positive."),
+        ("Classify the topic: 'The stock market rose after the earnings report.'", "The topic is finance."),
+        ("Classify the topic: 'A new species of frog was discovered in the rainforest.'", "The topic is biology."),
+        ("Is the statement a fact or opinion: 'Chocolate is the best ice cream flavor.'", "That is an opinion."),
+        ("Is the statement a fact or opinion: 'Water boils at 100 degrees Celsius.'", "That is a fact."),
+        ("Detect the sentiment: 'I am so happy today!'", "The sentiment is positive."),
+        ("Detect the sentiment: 'This is the worst experience ever.'", "The sentiment is negative."),
+    ]
+    pairs += classif
+
+    # brainstorm
+    brain = [
+        ("Give me three ideas for a birthday gift.", "Three birthday gift ideas are a book, a board game, and a personalized photo frame."),
+        ("Suggest two weekend activities.", "Two weekend activities are hiking in a nearby park and visiting a local museum."),
+        ("Brainstorm names for a coffee shop.", "Some coffee shop names are 'Morning Brew', 'The Daily Grind', and 'Cup & Co.'."),
+        ("What are three healthy breakfast options?", "Three healthy breakfasts are oatmeal with fruit, Greek yogurt with nuts, and scrambled eggs with spinach."),
+        ("Give me two tips for studying.", "Two study tips are using active recall and breaking study sessions into short focused blocks."),
+    ]
+    pairs += brain
+
+    # summarize
+    summ = [
+        ("Summarize in one sentence: 'The company launched a new phone. It has a faster chip and a better camera. Sales start next month.'",
+         "The company announced a new phone with a faster chip and better camera, available next month."),
+        ("Summarize in one sentence: 'A storm hit the coast. Roads flooded and schools closed. No injuries were reported.'",
+         "A coastal storm flooded roads and closed schools, but caused no injuries."),
+    ]
+    pairs += summ
+
+    # larger definition set (variety, accurate)
+    defs = {
+        "oxygen": "Oxygen is the gas that most living things breathe and that supports combustion.",
+        "gravity": "Gravity is the force that pulls objects with mass toward one another.",
+        "evolution": "Evolution is the change in inherited traits of populations over generations through natural selection.",
+        "atom": "An atom is the smallest unit of an element, made of a nucleus and electrons.",
+        "cell": "A cell is the basic structural and functional unit of life.",
+        "volcano": "A volcano is an opening in Earth's crust that lets magma, gas, and ash escape.",
+        "earthquake": "An earthquake is the shaking of the ground caused by movement of tectonic plates.",
+        "photosynthesis": "Photosynthesis is how plants make food from sunlight, water, and carbon dioxide.",
+        "magnet": "A magnet is an object that produces a magnetic field and attracts iron.",
+        "battery": "A battery stores chemical energy and converts it into electrical energy.",
+        "computer": "A computer is a machine that processes information according to instructions.",
+        "internet": "The internet is a global network connecting computers to share information.",
+        "vaccine": "A vaccine trains the immune system to recognize and fight a specific pathogen.",
+        "antibiotic": "An antibiotic is a medicine that kills or slows bacteria.",
+        "enzyme": "An enzyme is a protein that speeds up chemical reactions in living things.",
+        "hormone": "A hormone is a chemical messenger that regulates processes in the body.",
+        "meteor": "A meteor is a streak of light from a space rock burning up in the atmosphere.",
+        "comet": "A comet is a icy body that orbits the Sun and develops a tail of gas and dust.",
+        "galaxy": "A galaxy is a huge system of stars, gas, and dust held together by gravity.",
+        "telescope": "A telescope is an instrument that makes distant objects appear closer and larger.",
+        "microscope": "A microscope is a tool that magnifies very small objects.",
+        "circuit": "A circuit is a closed path through which electric current flows.",
+        "engine": "An engine is a machine that converts fuel or electricity into motion.",
+        "bridge": "A bridge is a structure built to cross a physical obstacle such as a river.",
+        "democracy": "Democracy is a system of government in which power rests with the people.",
+        "economy": "An economy is the system of production, distribution, and consumption of goods and services.",
+        "inflation": "Inflation is the general rise in prices over time, reducing money's purchasing power.",
+        "renewable energy": "Renewable energy comes from sources that replenish naturally, like sunlight and wind.",
+        "fossil fuel": "A fossil fuel is fuel formed from ancient organisms, such as coal, oil, and natural gas.",
+        "deforestation": "Deforestation is the clearing of forests, often for agriculture or timber.",
+        "biodiversity": "Biodiversity is the variety of life in an ecosystem or on Earth.",
+        "ecosystem": "An ecosystem is a community of organisms interacting with their environment.",
+        "protein": "Protein is a nutrient made of amino acids that builds and repairs body tissues.",
+        "carbohydrate": "A carbohydrate is a nutrient that provides energy, found in bread, rice, and fruit.",
+        "vitamin": "A vitamin is a compound the body needs in small amounts to function properly.",
+        "mineral": "A mineral is a solid, naturally occurring substance with a defined composition.",
+        "algorithm": "An algorithm is a step-by-step procedure for solving a problem.",
+        "function": "In programming, a function is a reusable block of code that performs a task.",
+        "variable": "A variable is a named storage location for a value in a program.",
+        "loop": "A loop is a programming construct that repeats a block of code.",
+        "matrix": "A matrix is a rectangular array of numbers used in mathematics.",
+        "derivative": "A derivative measures how a function changes as its input changes.",
+        "probability": "Probability is the measure of how likely an event is to occur.",
+        "statistics": "Statistics is the science of collecting, analyzing, and interpreting data.",
+        "friction": "Friction is the force that resists motion between surfaces in contact.",
+        "pressure": "Pressure is the force applied per unit area.",
+        "density": "Density is mass divided by volume.",
+        "temperature": "Temperature measures how hot or cold something is.",
+        "volume": "Volume is the amount of space an object occupies.",
+        "mass": "Mass is the amount of matter in an object.",
+        "energy": "Energy is the capacity to do work.",
+        "force": "A force is a push or pull that can change an object's motion.",
+    }
+    for term, d in defs.items():
+        pairs.append((f"What is {term}?", d))
+        pairs.append((f"Define {term}.", d))
+
     examples = []
     for instr, resp in pairs:
         examples.append({"messages": [

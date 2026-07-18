@@ -18,12 +18,17 @@ from .model import build_config, build_model
 
 
 @torch.no_grad()
-def generate(model, idx, max_new_tokens, temperature, top_k, eos_id, block_size):
+def generate(model, idx, max_new_tokens, temperature, top_k, rep_penalty, eos_id, block_size):
     for _ in range(max_new_tokens):
         idx_cond = idx[:, -block_size:]
         with torch.autocast("cuda", dtype=torch.bfloat16):
             logits = model(idx_cond)
         logits = logits[:, -1, :] / max(1e-5, temperature)
+        if rep_penalty != 1.0:
+            # suppress tokens already present in the context (standard repetition penalty)
+            for b in range(idx.size(0)):
+                for tok_id in set(idx[b].tolist()):
+                    logits[b, tok_id] /= rep_penalty
         if top_k:
             v, _ = torch.topk(logits, min(top_k, logits.size(-1)))
             logits[logits < v[:, [-1]]] = -float("inf")
@@ -44,6 +49,7 @@ def main():
     ap.add_argument("--max_new_tokens", type=int, default=200)
     ap.add_argument("--temperature", type=float, default=0.8)
     ap.add_argument("--top_k", type=int, default=50)
+    ap.add_argument("--repetition_penalty", type=float, default=1.15)
     ap.add_argument("--vocab_size", type=int, default=32000)
     ap.add_argument("--block_size", type=int, default=1024)
     args = ap.parse_args()
@@ -65,7 +71,7 @@ def main():
     ids = tok.encode(text, add_special_tokens=True)
     idx = torch.tensor([ids], device=device)
     out = generate(model, idx, args.max_new_tokens, args.temperature,
-                   args.top_k, eos_id, args.block_size)
+                    args.top_k, args.repetition_penalty, eos_id, args.block_size)
     print(tok.decode(out[0].tolist()))
 
 
