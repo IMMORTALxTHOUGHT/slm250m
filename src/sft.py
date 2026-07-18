@@ -100,6 +100,15 @@ def main():
         for row in rows:
             msgs = row.get("messages") or row.get("conversations")
             if not msgs:
+                # Alpaca-style: {instruction, input, output}
+                instr = row.get("instruction")
+                if instr is not None:
+                    user = instr
+                    if row.get("input"):
+                        user = f"{instr}\n{row['input']}"
+                    msgs = [{"role": "user", "content": user},
+                            {"role": "assistant", "content": row.get("output", "")}]
+            if not msgs:
                 continue
             if isinstance(msgs, list) and msgs and "from" in msgs[0]:
                 msgs = [{"role": ("assistant" if m.get("from") in ("assistant", "gpt")
