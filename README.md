@@ -101,3 +101,4 @@ bash scripts/03_eval.sh hf_model   # HellaSwag, ARC-e/c, PIQA, OpenBookQA
 - **Undertraining is expected** at 2.5B tokens; if smoke-test throughput is higher
   than planned, stream MORE unique tokens (raise `--total_tokens`) rather than
   adding epochs.
+# CAT tick 2026-09-28_12:30:27 tick=1790598627
