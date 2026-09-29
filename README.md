@@ -102,3 +102,4 @@ bash scripts/03_eval.sh hf_model   # HellaSwag, ARC-e/c, PIQA, OpenBookQA
   than planned, stream MORE unique tokens (raise `--total_tokens`) rather than
   adding epochs.
 # CAT tick 2026-09-28_12:30:27 tick=1790598627
+# CAT tick 2026-09-29_09:17:01 tick=1790673421
