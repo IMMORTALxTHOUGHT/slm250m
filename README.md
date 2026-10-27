@@ -180,3 +180,5 @@ bash scripts/03_eval.sh hf_model   # HellaSwag, ARC-e/c, PIQA, OpenBookQA
 # CAT tick 2026-10-27_02:55:36
 
 # CAT tick 2026-10-27_02:56:30
+
+# CAT tick 2026-10-27_06:30:36
